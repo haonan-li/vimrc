@@ -55,19 +55,25 @@ function! ale#socket#Open(address, options) abort
 
     if !has('nvim')
         " Vim
-        let l:channel_info.channel = ch_open(a:address, {
+        let l:channel_options = {
         \   'mode': l:mode,
         \   'waittime': 0,
         \   'callback': function('s:VimOutputCallback'),
-        \})
+        \}
+
+        " Use non-blocking writes for Vim versions that support the option.
+        if has('patch-8.1.350')
+            let l:channel_options.noblock = 1
+        endif
+
+        let l:channel_info.channel = ch_open(a:address, l:channel_options)
         let l:vim_info = ch_info(l:channel_info.channel)
         let l:channel_id = !empty(l:vim_info) ? l:vim_info.id : -1
     elseif exists('*chansend') && exists('*sockconnect')
         " NeoVim 0.3+
         try
-            let l:channel_id = sockconnect('tcp', a:address, {
-            \   'on_data': function('s:NeoVimOutputCallback'),
-            \})
+            let l:channel_id = sockconnect(stridx(a:address, ':') != -1 ? 'tcp' : 'pipe',
+            \   a:address, {'on_data': function('s:NeoVimOutputCallback')})
             let l:channel_info.last_line = ''
         catch /connection failed/
             let l:channel_id = -1
@@ -104,6 +110,7 @@ function! ale#socket#IsOpen(channel_id) abort
     endif
 
     let l:channel = s:channel_map[a:channel_id].channel
+
     return ch_status(l:channel) is# 'open'
 endfunction
 

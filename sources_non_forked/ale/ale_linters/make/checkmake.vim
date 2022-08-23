@@ -13,12 +13,13 @@ function! ale_linters#make#checkmake#Handle(buffer, lines) abort
         \    'text': l:match[3],
         \})
     endfor
+
     return l:output
 endfunction
 
 call ale#linter#Define('make', {
 \   'name': 'checkmake',
 \   'executable': 'checkmake',
-\   'command': 'checkmake %s --format="{{.LineNumber}}:{{.Rule}}:{{.Violation}}"',
+\   'command': 'checkmake %s --format="{{.LineNumber}}:{{.Rule}}:{{.Violation}}{{\"\r\n\"}}"',
 \   'callback': 'ale_linters#make#checkmake#Handle',
 \})
